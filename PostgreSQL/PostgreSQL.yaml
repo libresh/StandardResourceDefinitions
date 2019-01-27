@@ -1,0 +1,80 @@
+apiVersion: "postgresql.srd.kubernetes.io/v1"
+kind: postgresql
+metadata:
+  name: example-postgresql
+  namespace: example
+spec:
+  volumeClaimTemplate:
+  - spec:
+      accessModes: [ "ReadWriteOnce" ]
+      #storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: "100Gi"
+  network:
+    secure: false
+    NetworkPolicy:
+      Enabled: false
+      AllowExternal: true
+    Service:
+      type: ClusterIP
+      annotation:
+        passMe: ToService
+      spec:
+        type: NodePort
+        ports:
+        - name:  http
+          port:  5432
+          targetPort: http
+        - name: grpc
+          port: 26257
+  compute:
+    replicas: 2
+    Resources:
+      requests:
+        cpu: "100m"
+        memory: "512Mi"
+      limits: {}
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+    aws:
+      instanceClass: db.m1.small
+    gcloud:
+      machineType: n1-highmem-2
+    azure:
+      vmSize: Standard_B1s
+  observability:
+    deployExporters: true
+    deployAlerts: true
+    deployDashboards: true
+  backups:
+    configuration: backup-database-demo
+    compute:
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "250m"
+      affinity: {}
+      tolerations: []
+      nodeSelector:
+        cloud.google.com/gke-nodepool: pool-highcpu32
+  options:
+    cachePercent: 25
+    maxSQLMemoryPercent: 25
+    users:
+      myuser:
+      - superuser
+      - createdb
+      foo_user:
+    databases:
+      name: myuser
+    version: "10"
+    standbyMode: Hot
+    streamingMode: asynchronous
+    updates:
+      updateStrategy:
+        type: RollingUpdate
+      allowMajorVersionUpgrade: true
+      allowMinorVersionUpgrade: true
+
